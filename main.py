@@ -1,16 +1,16 @@
-from fastapi import FastAPI, status, HTTPException, Depends
+from fastapi import FastAPI, status, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from schemas import UserOut, UserAuth, TokenSchema
 from deps import get_current_user
 import json
+from os import path
 from utils import (
-    get_hashed_password,
     create_access_token,
     create_refresh_token,
     verify_password
 )
+
 app = FastAPI()
 origins = ["*"]
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -23,7 +23,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#exec(open("videoRequester.py").read())
+
+def obj_dict(obj):
+    return obj.__dict__
+
+
+# exec(open("videoRequester.py").read())
 
 
 @app.post('/kirjaudu', summary="Kirjaudu sisään", response_model=TokenSchema)
@@ -60,14 +65,56 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     }
 
 
-@app.get('/luoTagi', summary='Luo uusi tagi', response_model=UserOut)
-async def get_me(user = Depends(get_current_user)):
-    return user
+@app.post('/tagit', summary='Luo uusi tagi')
+async def create_tag(nimi: str, response: Response, user=Depends(get_current_user)):
+    nimi = nimi.lower()
+    if path.isfile("tags.json") is False:
+        with open("tags.json", 'w') as f:
+            json.dump({"piilotettu": [""]}, f)
+    with open("tags.json") as f:
+        tags = json.load(f)
+    if nimi in tags:
+        response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        return "Tagi " + nimi + " on jo olemassa"
+    tags[nimi] = [nimi]
+    with open("tags.json", 'w') as json_file:
+        json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
+    response.status_code = status.HTTP_201_CREATED
+    return "OK - " + nimi + " lisätty tageihin"
+
+
+@app.post('/tagit/{tagin_nimi}', summary='Lisää tagille avainsana')
+async def create_tag(tagin_nimi: str, avainsana: str, response: Response, user=Depends(get_current_user)):
+    avainsana = avainsana.lower()
+    tagin_nimi = tagin_nimi.lower()
+    print(avainsana)
+    print(tagin_nimi)
+    if path.isfile("tags.json") is False:
+        with open("tags.json", 'w') as f:
+            json.dump({"piilotettu": [""]}, f)
+    with open("tags.json") as f:
+        tags = json.load(f)
+    if tags[tagin_nimi] is None:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return "Tagia " + avainsana + " ei ole olemassa"
+    if avainsana in tags[tagin_nimi]:
+        response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        return "Avainsana " + avainsana + " on jo tagissa"
+    tags[tagin_nimi].append(avainsana)
+    with open("tags.json", 'w') as json_file:
+        json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
+    return "OK - " + avainsana + " lisätty tagiin: " + tagin_nimi
+
+
+@app.get('/tagit', summary='Listaa kaikki tagit')
+async def get_me():
+    data = json.load(open('tags.json', encoding='utf-8'))
+
+    return data
 
 
 @app.get("/keskusteluohjelma", summary="Listaa aiheet hakusanan mukaan")
 def hello(term: str):
-
     data = json.load(open('data.json', encoding='utf-8'))
 
     links = []
