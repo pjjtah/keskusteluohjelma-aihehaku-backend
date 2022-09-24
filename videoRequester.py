@@ -9,24 +9,28 @@ class Video:
     chapters = ""
 
 
-videosResponse = requests.get("https://www.googleapis.com/youtube/v3/search?key="
-                              "AIzaSyBdol30F4CzPOIbkWBsjAKOKHvKCUCTUVI&channelId=UCBHvy-pjrxS88ZqiJXS6Ydw&part="
+with open("apikey.txt", "r") as file:
+    apiKey = file.read()
+videosResponse = requests.get("https://www.googleapis.com/youtube/v3/search?key=" + apiKey +
+                              "&channelId=UCBHvy-pjrxS88ZqiJXS6Ydw&part="
                               "snippet,id&order=date&maxResults=50")
 
 videoPages = [videosResponse.json()]
 while "nextPageToken" in videoPages[len(videoPages)-1]:
-    videosResponse = requests.get("https://www.googleapis.com/youtube/v3/search?key="
-                                  "AIzaSyBdol30F4CzPOIbkWBsjAKOKHvKCUCTUVI&channelId=UCBHvy-pjrxS88ZqiJXS6Ydw&part="
+    videosResponse = requests.get("https://www.googleapis.com/youtube/v3/search?key=" + apiKey +
+                                  "&channelId=UCBHvy-pjrxS88ZqiJXS6Ydw&part="
                                   "snippet,id&order=date&maxResults=50&pageToken=" + videoPages[len(videoPages)-1]["nextPageToken"])
     videoPages.append(videosResponse.json())
 
 jsonVideos = []
 
+counter = 0
+
 for videos in videoPages:
     for v in videos["items"]:
         if v['id']["kind"] == 'youtube#video':
             descriptionResponse = requests.get("https://www.googleapis.com/youtube/v3/videos?part=snippet&id="
-                                               + v["id"]["videoId"] + "&key=AIzaSyBdol30F4CzPOIbkWBsjAKOKHvKCUCTUVI")
+                                               + v["id"]["videoId"] + "&key=" + apiKey)
             descriptions = descriptionResponse.json()
             video = Video()
             video.videoId = v["id"]["videoId"]
@@ -51,9 +55,9 @@ for videos in videoPages:
                         seconds += int(time[1])
                     chap[0] = seconds
                     chapters.append(chap)
+                    counter += 1
 
             video.chapters = chapters
-            # print("https://youtu.be/" + video.videoId + "?t=" + str(video.chapters[5][0]))
             jsonVideos.append(video)
 
 
@@ -62,7 +66,8 @@ def obj_dict(obj):
 
 
 jsonString = json.dumps(jsonVideos, default=obj_dict, ensure_ascii=False)
-jsonFile = open("data.json", "w", encoding="utf-8")
+jsonFile = open("data.json", "w")
 jsonFile.write(jsonString)
 jsonFile.close()
-print(str(len(jsonVideos)) + " videota lisätty")
+print(str(len(jsonVideos)) + " videota käyty läpi")
+print("Yhteensä " + str(counter) + " pätkää")
