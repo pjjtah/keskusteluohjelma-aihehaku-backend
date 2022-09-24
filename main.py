@@ -107,16 +107,15 @@ async def create_tag(tagin_nimi: str, avainsana: str, response: Response, user=D
 
 
 @app.get('/tagit', summary='Listaa kaikki tagit')
-async def get_me():
+async def get_tags():
     data = json.load(open('tags.json', encoding='utf-8'))
 
-    return data
+    return json.dumps(data)
 
 
 @app.get("/keskusteluohjelma", summary="Listaa aiheet hakusanan mukaan")
 def hello(term: str):
     data = json.load(open('data.json', encoding='utf-8'))
-
     links = []
     for d in data:
         for c in d["chapters"]:
