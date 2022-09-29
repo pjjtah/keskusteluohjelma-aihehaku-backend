@@ -83,12 +83,10 @@ async def create_tag(nimi: str, response: Response, user=Depends(get_current_use
     return "OK - " + nimi + " lisätty tageihin"
 
 
-@app.post('/tagit/{tagin_nimi}', summary='Lisää tagille avainsana')
-async def create_tag(tagin_nimi: str, avainsana: str, response: Response, user=Depends(get_current_user)):
-    avainsana = avainsana.lower()
+@app.post('/tagit/{tagin_nimi}/{avainsana}/{aika}', summary='Lisää tagille avainsana')
+async def create_tag(tagin_nimi: str, avainsana: str, aika: str, response: Response, user=Depends(get_current_user)):
+    avainsana = avainsana + "?t=" + aika.lower()
     tagin_nimi = tagin_nimi.lower()
-    print(avainsana)
-    print(tagin_nimi)
     if path.isfile("tags.json") is False:
         with open("tags.json", 'w') as f:
             json.dump({"piilotettu": [""]}, f)
@@ -104,6 +102,28 @@ async def create_tag(tagin_nimi: str, avainsana: str, response: Response, user=D
     with open("tags.json", 'w') as json_file:
         json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
     return "OK - " + avainsana + " lisätty tagiin: " + tagin_nimi
+
+
+@app.delete('/tagit/{tagin_nimi}/{avainsana}/{aika}', summary='Lisää tagille avainsana')
+async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Response, user=Depends(get_current_user)):
+    avainsana = avainsana + "?t=" + aika.lower()
+    tagin_nimi = tagin_nimi.lower()
+    if path.isfile("tags.json") is False:
+        with open("tags.json", 'w') as f:
+            json.dump({"piilotettu": [""]}, f)
+    with open("tags.json") as f:
+        tags = json.load(f)
+    if tags[tagin_nimi] is None:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return "Tagia " + avainsana + " ei ole olemassa"
+    if avainsana in tags[tagin_nimi]:
+        tags[tagin_nimi].remove(avainsana)
+        with open("tags.json", 'w') as json_file:
+            json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
+        return "OK - " + avainsana + " poistettu tagista: " + tagin_nimi
+    response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    return "Tagia poistaessa tapahtui virhe"
+
 
 
 @app.get('/tagit', summary='Listaa kaikki tagit')
