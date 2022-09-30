@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, status, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -28,11 +30,16 @@ def obj_dict(obj):
     return obj.__dict__
 
 
-# exec(open("videoRequester.py").read())
+exec(open("videoRequester.py").read())
 
 
 @app.post('/kirjaudu', summary="Kirjaudu sisään", response_model=TokenSchema)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    if path.isfile("users.json") is False:
+        with open("users.json", 'w') as f:
+            json.dump({"id": "087cb8b7-add0-45d3-9407-d0d99d26c253", "username": os.environ.get("username"),
+                       "password": os.environ.get("password"),
+                       "access_token": "", "refresh_token": ""}, f)
     u = json.load(open('users.json', encoding='utf-8'))
     user = None
 
