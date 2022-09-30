@@ -37,8 +37,8 @@ exec(open("videoRequester.py").read())
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if path.isfile("users.json") is False:
         with open("users.json", 'w') as f:
-            json.dump({"id": "087cb8b7-add0-45d3-9407-d0d99d26c253", "username": os.environ.get("username"),
-                       "password": os.environ.get("password"),
+            json.dump({"id": "087cb8b7-add0-45d3-9407-d0d99d26c253", "username": os.environ.get("_username"),
+                       "password": os.environ.get("_password"),
                        "access_token": "", "refresh_token": ""}, f)
     u = json.load(open('users.json', encoding='utf-8'))
     user = None
