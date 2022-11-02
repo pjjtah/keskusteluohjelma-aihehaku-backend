@@ -1,5 +1,5 @@
 import os
-
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from fastapi import FastAPI, status, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -12,6 +12,15 @@ from utils import (
     create_refresh_token,
     verify_password
 )
+from dotenv import load_dotenv
+from videoRequester import get_videos
+from datetime import date
+
+load_dotenv()
+
+connect_str = apiKey = os.environ['connect_str']
+container_name = os.environ['container_name']
+container_client = ContainerClient.from_connection_string(connect_str, container_name)
 
 app = FastAPI()
 origins = ["*"]
@@ -30,7 +39,17 @@ def obj_dict(obj):
     return obj.__dict__
 
 
-exec(open("videoRequester.py").read())
+get_videos()
+
+if path.isfile("tags.json") is False:
+    blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="tags.json")
+    if blob.exists():
+        with open("tags.json", "wb") as my_blob:
+            blob_data = blob.download_blob()
+            blob_data.readinto(my_blob)
+    else:
+        with open("tags.json", 'w') as f:
+            json.dump({"piilotettu": [""]}, f)
 
 
 @app.post('/kirjaudu', summary="Kirjaudu sisään", response_model=TokenSchema)
@@ -63,7 +82,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     u["access_token"] = access_token
     u["refresh_token"] = refresh_token
     json_string = json.dumps(u, ensure_ascii=False)
-    json_file = open("users.json", "w")
+    json_file = open("users.json", "w", encoding="utf-8")
     json_file.write(json_string)
     json_file.close()
     return {
@@ -76,6 +95,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def create_tag(nimi: str, response: Response, user=Depends(get_current_user)):
     nimi = nimi.lower()
     if path.isfile("tags.json") is False:
+        backup_name = "data-" + date.today().strftime("%d-%m-%Y") + ".json"
+        blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="tags.json")
+        if blob.exists():
+            with open(backup_name, "wb") as my_blob:
+                blob_data = blob.download_blob()
+                blob_data.readinto(my_blob)
         with open("tags.json", 'w') as f:
             json.dump({"piilotettu": [""]}, f)
     with open("tags.json") as f:
@@ -132,22 +157,31 @@ async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
     return "Tagia poistaessa tapahtui virhe"
 
 
-
 @app.get('/tagit', summary='Listaa kaikki tagit')
 async def get_tags():
     data = json.load(open('tags.json', encoding='utf-8'))
-
     return json.dumps(data)
 
 
 @app.get("/keskusteluohjelma", summary="Listaa aiheet hakusanan mukaan")
 def hello(term: str):
     data = json.load(open('data.json', encoding='utf-8'))
+    tags = json.load(open('tags.json', encoding='utf-8'))
     links = []
+    tagged_ids = []
+    for tag in tags:
+        if tag == term:
+            videos = tags[term]
+            for i in range(1, len(videos)):
+                tagged_ids.append(videos[i])
     for d in data:
         for c in d["chapters"]:
+            chapter_id = d["videoId"] + "?t=" + str(c[0])
             if term in c[1]:
-                link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
+                link = [d["title"], c[1], "https://youtu.be/" + chapter_id]
+                links.append(link)
+            elif chapter_id in tagged_ids:
+                link = [d["title"], c[1], "https://youtu.be/" + chapter_id]
                 links.append(link)
 
     return json.dumps(links, ensure_ascii=False)
