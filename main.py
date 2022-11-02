@@ -12,11 +12,11 @@ from utils import (
     create_refresh_token,
     verify_password
 )
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from videoRequester import get_videos
 from datetime import date
 
-load_dotenv()
+# load_dotenv()
 
 connect_str = apiKey = os.environ['connect_str']
 container_name = os.environ['container_name']
