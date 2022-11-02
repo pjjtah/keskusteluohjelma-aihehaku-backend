@@ -2,7 +2,7 @@ import os, uuid
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from datetime import date
 
-connect_str = apiKey = os.environ['connect_str']
+connect_str = os.environ['connect_str']
 container_name = os.environ['container_name']
 container_client = ContainerClient.from_connection_string(connect_str, container_name)
 

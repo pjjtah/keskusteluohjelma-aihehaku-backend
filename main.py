@@ -12,10 +12,15 @@ from utils import (
     create_refresh_token,
     verify_password
 )
+from dotenv import load_dotenv
+from videoRequester import get_videos
+from datetime import date
 
-connect_str = "DefaultEndpointsProtocol=https;AccountName=keskustelustorage;AccountKey=aCehhZZE24MGSDFdnQkfT5L19TrrLxufl+q5EVQExI3Bg6qJR7/BcSzGQZAe572qmXYZyu/XQ/ci+AStEahhUQ==;EndpointSuffix=core.windows.net"
-container_name = "keskusteluohjelma"
-container_client = ContainerClient.from_connection_string(connect_str, "keskusteluohjelma")
+load_dotenv()
+
+connect_str = apiKey = os.environ['connect_str']
+container_name = os.environ['container_name']
+container_client = ContainerClient.from_connection_string(connect_str, container_name)
 
 app = FastAPI()
 origins = ["*"]
@@ -34,7 +39,7 @@ def obj_dict(obj):
     return obj.__dict__
 
 
-exec(open("videoRequester.py").read())
+get_videos()
 
 if path.isfile("tags.json") is False:
     blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="tags.json")
@@ -77,7 +82,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     u["access_token"] = access_token
     u["refresh_token"] = refresh_token
     json_string = json.dumps(u, ensure_ascii=False)
-    json_file = open("users.json", "w")
+    json_file = open("users.json", "w", encoding="utf-8")
     json_file.write(json_string)
     json_file.close()
     return {
@@ -90,7 +95,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def create_tag(nimi: str, response: Response, user=Depends(get_current_user)):
     nimi = nimi.lower()
     if path.isfile("tags.json") is False:
-        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        backup_name = "data-" + date.today().strftime("%d-%m-%Y") + ".json"
         blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="tags.json")
         if blob.exists():
             with open(backup_name, "wb") as my_blob:
@@ -161,11 +166,22 @@ async def get_tags():
 @app.get("/keskusteluohjelma", summary="Listaa aiheet hakusanan mukaan")
 def hello(term: str):
     data = json.load(open('data.json', encoding='utf-8'))
+    tags = json.load(open('tags.json', encoding='utf-8'))
     links = []
+    tagged_ids = []
+    for tag in tags:
+        if tag == term:
+            videos = tags[term]
+            for i in range(1, len(videos)):
+                tagged_ids.append(videos[i])
     for d in data:
         for c in d["chapters"]:
+            chapter_id = d["videoId"] + "?t=" + str(c[0])
             if term in c[1]:
-                link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
+                link = [d["title"], c[1], "https://youtu.be/" + chapter_id]
+                links.append(link)
+            elif chapter_id in tagged_ids:
+                link = [d["title"], c[1], "https://youtu.be/" + chapter_id]
                 links.append(link)
 
     return json.dumps(links, ensure_ascii=False)
