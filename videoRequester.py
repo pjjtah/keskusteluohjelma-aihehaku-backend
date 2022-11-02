@@ -10,7 +10,7 @@ class Video:
     chapters = ""
 
 
-apiKey = os.environ.get('apikey')
+apiKey = os.environ['apikey']
 videosResponse = requests.get("https://www.googleapis.com/youtube/v3/search?key=" + apiKey +
                               "&channelId=UCBHvy-pjrxS88ZqiJXS6Ydw&part="
                               "snippet,id&order=date&maxResults=50")

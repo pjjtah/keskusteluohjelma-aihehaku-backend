@@ -1,5 +1,5 @@
 import os
-
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from fastapi import FastAPI, status, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -12,6 +12,10 @@ from utils import (
     create_refresh_token,
     verify_password
 )
+
+connect_str = "DefaultEndpointsProtocol=https;AccountName=keskustelustorage;AccountKey=aCehhZZE24MGSDFdnQkfT5L19TrrLxufl+q5EVQExI3Bg6qJR7/BcSzGQZAe572qmXYZyu/XQ/ci+AStEahhUQ==;EndpointSuffix=core.windows.net"
+container_name = "keskusteluohjelma"
+container_client = ContainerClient.from_connection_string(connect_str, "keskusteluohjelma")
 
 app = FastAPI()
 origins = ["*"]
@@ -31,6 +35,16 @@ def obj_dict(obj):
 
 
 exec(open("videoRequester.py").read())
+
+if path.isfile("tags.json") is False:
+    blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="tags.json")
+    if blob.exists():
+        with open("tags.json", "wb") as my_blob:
+            blob_data = blob.download_blob()
+            blob_data.readinto(my_blob)
+    else:
+        with open("tags.json", 'w') as f:
+            json.dump({"piilotettu": [""]}, f)
 
 
 @app.post('/kirjaudu', summary="Kirjaudu sisään", response_model=TokenSchema)
@@ -76,6 +90,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def create_tag(nimi: str, response: Response, user=Depends(get_current_user)):
     nimi = nimi.lower()
     if path.isfile("tags.json") is False:
+        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="tags.json")
+        if blob.exists():
+            with open(backup_name, "wb") as my_blob:
+                blob_data = blob.download_blob()
+                blob_data.readinto(my_blob)
         with open("tags.json", 'w') as f:
             json.dump({"piilotettu": [""]}, f)
     with open("tags.json") as f:
@@ -132,11 +152,9 @@ async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
     return "Tagia poistaessa tapahtui virhe"
 
 
-
 @app.get('/tagit', summary='Listaa kaikki tagit')
 async def get_tags():
     data = json.load(open('tags.json', encoding='utf-8'))
-
     return json.dumps(data)
 
 
