@@ -18,12 +18,8 @@ from datetime import date
 
 # load_dotenv()
 
-connect_str = os.environ['connect_str']
-container_name = os.environ['container_name']
-container_client = ContainerClient.from_connection_string(connect_str, container_name)
-
 app = FastAPI()
-origins = ["https://aihehaku-frontend.herokuapp.com"]
+origins = ["*"]
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app.add_middleware(
@@ -34,12 +30,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+connect_str = os.environ['connect_str']
+container_name = os.environ['container_name']
+container_client = ContainerClient.from_connection_string(connect_str, container_name)
+
 
 def obj_dict(obj):
     return obj.__dict__
 
 
-#get_videos()
+# get_videos()
 
 
 def check_tags():
