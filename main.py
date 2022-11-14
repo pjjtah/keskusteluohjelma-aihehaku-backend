@@ -23,7 +23,7 @@ container_name = os.environ['container_name']
 container_client = ContainerClient.from_connection_string(connect_str, container_name)
 
 app = FastAPI()
-origins = ["*"]
+origins = ["https://aihehaku-frontend.herokuapp.com"]
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app.add_middleware(
