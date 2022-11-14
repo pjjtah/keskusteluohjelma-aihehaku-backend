@@ -18,7 +18,7 @@ from datetime import date
 
 # load_dotenv()
 
-connect_str = apiKey = os.environ['connect_str']
+connect_str = os.environ['connect_str']
 container_name = os.environ['container_name']
 container_client = ContainerClient.from_connection_string(connect_str, container_name)
 
@@ -39,17 +39,33 @@ def obj_dict(obj):
     return obj.__dict__
 
 
-get_videos()
+#get_videos()
 
-if path.isfile("tags.json") is False:
-    blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="tags.json")
-    if blob.exists():
-        with open("tags.json", "wb") as my_blob:
-            blob_data = blob.download_blob()
-            blob_data.readinto(my_blob)
-    else:
-        with open("tags.json", 'w') as f:
-            json.dump({"piilotettu": [""]}, f)
+
+def check_tags():
+    if path.isfile("tags.json") is False:
+        blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name,
+                                                 blob_name="tags.json")
+        if blob.exists():
+            with open("tags.json", "wb") as my_blob:
+                blob_data = blob.download_blob()
+                blob_data.readinto(my_blob)
+        else:
+            with open("tags.json", 'w') as f:
+                json.dump({"piilotettu": [""]}, f)
+
+
+def check_suggestions():
+    if path.isfile("suggestions.json") is False:
+        blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name,
+                                                 blob_name="suggestions.json")
+        if blob.exists():
+            with open("suggestions.json", "wb") as my_blob:
+                blob_data = blob.download_blob()
+                blob_data.readinto(my_blob)
+        else:
+            with open("suggestions.json", 'w') as f:
+                json.dump({"testi": date.today().strftime("%d-%m-%Y")}, f)
 
 
 @app.post('/kirjaudu', summary="Kirjaudu sisään", response_model=TokenSchema)
@@ -94,15 +110,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 @app.post('/tagit', summary='Luo uusi tagi')
 async def create_tag(nimi: str, response: Response, user=Depends(get_current_user)):
     nimi = nimi.lower()
-    if path.isfile("tags.json") is False:
-        backup_name = "data-" + date.today().strftime("%d-%m-%Y") + ".json"
-        blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="tags.json")
-        if blob.exists():
-            with open(backup_name, "wb") as my_blob:
-                blob_data = blob.download_blob()
-                blob_data.readinto(my_blob)
-        with open("tags.json", 'w') as f:
-            json.dump({"piilotettu": [""]}, f)
+    check_tags()
     with open("tags.json") as f:
         tags = json.load(f)
     if nimi in tags:
@@ -119,9 +127,7 @@ async def create_tag(nimi: str, response: Response, user=Depends(get_current_use
 async def create_tag(tagin_nimi: str, avainsana: str, aika: str, response: Response, user=Depends(get_current_user)):
     avainsana = avainsana + "?t=" + aika.lower()
     tagin_nimi = tagin_nimi.lower()
-    if path.isfile("tags.json") is False:
-        with open("tags.json", 'w') as f:
-            json.dump({"piilotettu": [""]}, f)
+    check_tags()
     with open("tags.json") as f:
         tags = json.load(f)
     if tags[tagin_nimi] is None:
@@ -140,9 +146,7 @@ async def create_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
 async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Response, user=Depends(get_current_user)):
     avainsana = avainsana + "?t=" + aika.lower()
     tagin_nimi = tagin_nimi.lower()
-    if path.isfile("tags.json") is False:
-        with open("tags.json", 'w') as f:
-            json.dump({"piilotettu": [""]}, f)
+    check_tags()
     with open("tags.json") as f:
         tags = json.load(f)
     if tags[tagin_nimi] is None:
@@ -159,8 +163,28 @@ async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
 
 @app.get('/tagit', summary='Listaa kaikki tagit')
 async def get_tags():
+    check_tags()
     data = json.load(open('tags.json', encoding='utf-8'))
     return json.dumps(data)
+
+
+@app.get("/ehdotukset", summary="Listaa kaikki ehdotukset")
+def get_suggestions():
+    check_suggestions()
+    suggestions = json.load(open('suggestions.json', encoding='utf-8'))
+    return json.dumps(suggestions)
+
+
+@app.post("/ehdotukset", summary="Lisää uuden ehdotuksen")
+def create_suggestion(ehdotus: str, response: Response):
+    check_suggestions()
+    with open("suggestions.json") as f:
+        suggestions = json.load(f)
+    suggestions[ehdotus] = date.today().strftime("%d-%m-%Y")
+    with open("suggestions.json", 'w') as json_file:
+        json.dump(suggestions, json_file, default=obj_dict, ensure_ascii=False)
+    response.status_code = status.HTTP_201_CREATED
+    return "OK - " + ehdotus + " lisätty ehdotuksiin"
 
 
 @app.get("/keskusteluohjelma", summary="Listaa aiheet hakusanan mukaan")
