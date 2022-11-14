@@ -39,7 +39,7 @@ def obj_dict(obj):
     return obj.__dict__
 
 
-# get_videos()
+get_videos()
 
 
 def check_tags():
@@ -190,6 +190,20 @@ def create_suggestion(ehdotus: str, response: Response):
 @app.get("/keskusteluohjelma", summary="Listaa aiheet hakusanan mukaan")
 def hello(term: str):
     data = json.load(open('data.json', encoding='utf-8'))
+    links = []
+    for d in data:
+        for c in d["chapters"]:
+            if term in c[1]:
+                link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
+                links.append(link)
+
+    return json.dumps(links, ensure_ascii=False)
+
+
+'''
+@app.get("/keskusteluohjelma", summary="Listaa aiheet hakusanan mukaan")
+def hello(term: str):
+    data = json.load(open('data.json', encoding='utf-8'))
     tags = json.load(open('tags.json', encoding='utf-8'))
     links = []
     tagged_ids = []
@@ -209,3 +223,4 @@ def hello(term: str):
                 links.append(link)
 
     return json.dumps(links, ensure_ascii=False)
+'''
