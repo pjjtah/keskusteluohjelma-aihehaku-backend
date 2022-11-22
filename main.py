@@ -12,11 +12,11 @@ from utils import (
     create_refresh_token,
     verify_password
 )
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from videoRequester import get_videos
 from datetime import date
 
-load_dotenv()
+# load_dotenv()
 
 app = FastAPI()
 origins = ["*"]
@@ -39,7 +39,7 @@ def obj_dict(obj):
     return obj.__dict__
 
 
-# get_videos()
+get_videos()
 
 
 def check_tags():
