@@ -12,11 +12,11 @@ from utils import (
     create_refresh_token,
     verify_password
 )
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 from videoRequester import get_videos
 from datetime import date
 
-# load_dotenv()
+load_dotenv()
 
 app = FastAPI()
 origins = ["*"]
@@ -39,7 +39,7 @@ def obj_dict(obj):
     return obj.__dict__
 
 
-get_videos()
+# get_videos()
 
 
 def check_tags():
@@ -142,7 +142,7 @@ async def create_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
     return "OK - " + avainsana + " lisätty tagiin: " + tagin_nimi
 
 
-@app.delete('/tagit/{tagin_nimi}/{avainsana}/{aika}', summary='Lisää tagille avainsana')
+@app.delete('/tagit/{tagin_nimi}/{avainsana}/{aika}', summary='Poistaa tagilta avainsanan')
 async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Response, user=Depends(get_current_user)):
     avainsana = avainsana + "?t=" + aika.lower()
     tagin_nimi = tagin_nimi.lower()
@@ -161,10 +161,30 @@ async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
     return "Tagia poistaessa tapahtui virhe"
 
 
+@app.delete('/tagit', summary='Poista tagi')
+async def delete_tag(nimi: str, response: Response, user=Depends(get_current_user)):
+    tagin_nimi = nimi
+    check_tags()
+    print(tagin_nimi)
+    print(nimi)
+    with open("tags.json") as f:
+        tags = json.load(f)
+    if tags[tagin_nimi] is None:
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return "Tagia " + tagin_nimi + " ei ole olemassa"
+    if tagin_nimi in tags:
+        tags.pop(tagin_nimi)
+        with open("tags.json", 'w') as json_file:
+            json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
+        return "OK - " + tagin_nimi + " poistettu tageista"
+    response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    return "Tagia poistaessa tapahtui virhe"
+
+
 @app.get('/tagit', summary='Listaa kaikki tagit')
 async def get_tags():
     check_tags()
-    data = json.load(open('tags.json', encoding='utf-8'))
+    data = json.load(open('tags.json', encoding='iso-8859-1'))
     return json.dumps(data)
 
 
