@@ -3,6 +3,12 @@ from datetime import datetime, timedelta
 from typing import Union, Any
 from jose import jwt
 from passlib.context import CryptContext
+from dotenv import load_dotenv
+from videoRequester import get_videos
+from datetime import date
+
+load_dotenv()
+
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

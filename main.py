@@ -12,11 +12,11 @@ from utils import (
     create_refresh_token,
     verify_password
 )
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 from videoRequester import get_videos
 from datetime import date
 
-# load_dotenv()
+load_dotenv()
 
 app = FastAPI()
 origins = ["*"]
@@ -39,7 +39,7 @@ def obj_dict(obj):
     return obj.__dict__
 
 
-get_videos()
+# get_videos()
 
 
 def check_tags():
@@ -93,6 +93,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Kirjautuminen epäonnistui"
         )
+
+    print(user['username'])
     access_token = create_access_token(user['username'])
     refresh_token = create_refresh_token(user['username'])
     u["access_token"] = access_token
@@ -135,7 +137,7 @@ async def create_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
         return "Tagia " + avainsana + " ei ole olemassa"
     if avainsana in tags[tagin_nimi]:
         response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-        return "Avainsana " + avainsana + " on jo tagissa"
+        return "Avainsana " + tagin_nimi + " on jo tagissa"
     tags[tagin_nimi].append(avainsana)
     with open("tags.json", 'w') as json_file:
         json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
@@ -188,6 +190,20 @@ async def get_tags():
     return json.dumps(data)
 
 
+@app.get('/tagit/{videoId}', summary='Listaa kaikki videon tagit')
+async def get_tags_by_videoId(videoId: str):
+    check_tags()
+    data = json.load(open('tags.json', encoding='iso-8859-1'))
+    selected = []
+    for tag in data:
+        for t in data[tag]:
+            if videoId in t:
+                selected.append(tag)
+                break
+
+    return json.dumps(selected)
+
+
 @app.get("/ehdotukset", summary="Listaa kaikki ehdotukset")
 def get_suggestions():
     check_suggestions()
@@ -207,6 +223,7 @@ def create_suggestion(ehdotus: str, response: Response):
     return "OK - " + ehdotus + " lisätty ehdotuksiin"
 
 
+'''
 @app.get("/keskusteluohjelma", summary="Listaa aiheet hakusanan mukaan")
 def hello(term: str):
     data = json.load(open('data.json', encoding='utf-8'))
@@ -221,26 +238,104 @@ def hello(term: str):
 
 
 '''
+
+
 @app.get("/keskusteluohjelma", summary="Listaa aiheet hakusanan mukaan")
 def hello(term: str):
     data = json.load(open('data.json', encoding='utf-8'))
-    tags = json.load(open('tags.json', encoding='utf-8'))
+    tags = json.load(open('tags.json', encoding='"ISO-8859-1")'))
+    if term == "":
+        links = []
+        for d in data:
+            for c in d["chapters"]:
+                if term in c[1]:
+                    if d["videoId"] + "?t=" + str(c[0]) not in tags["piilotettu"]:
+                        link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
+                        links.append(link)
+        print(links)
+        return json.dumps(links, ensure_ascii=False)
+
     links = []
+    tagged = []
     tagged_ids = []
+
     for tag in tags:
-        if tag == term:
-            videos = tags[term]
-            for i in range(1, len(videos)):
-                tagged_ids.append(videos[i])
+        if term in tag:
+            tagged.append(tag)
+    for tag in tagged:
+        for t in tags[tag]:
+            if t != tag:
+                tagged_ids.append(t)
     for d in data:
         for c in d["chapters"]:
-            chapter_id = d["videoId"] + "?t=" + str(c[0])
-            if term in c[1]:
-                link = [d["title"], c[1], "https://youtu.be/" + chapter_id]
+            if d["videoId"] + "?t=" + str(c[0]) in tagged_ids:
+                link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                 links.append(link)
-            elif chapter_id in tagged_ids:
-                link = [d["title"], c[1], "https://youtu.be/" + chapter_id]
-                links.append(link)
-
+    print(links)
     return json.dumps(links, ensure_ascii=False)
-'''
+
+
+@app.get("/keskusteluohjelmaAdmin", summary="Listaa aiheet hakusanan mukaan")
+def hello(term: str):
+    data = json.load(open('data.json', encoding='utf-8'))
+    if term == "":
+        links = []
+        for d in data:
+            for c in d["chapters"]:
+                if term in c[1]:
+                    link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
+                    links.append(link)
+        print(links)
+        return json.dumps(links, ensure_ascii=False)
+
+    tags = json.load(open('tags.json', encoding='"ISO-8859-1")'))
+    links = []
+    tagged = []
+    tagged_ids = []
+
+    for tag in tags:
+        if term in tag:
+            tagged.append(tag)
+    for tag in tagged:
+        for t in tags[tag]:
+            if t != tag:
+                tagged_ids.append(t)
+    for d in data:
+        for c in d["chapters"]:
+            if d["videoId"] + "?t=" + str(c[0]) in tagged_ids:
+                link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
+                links.append(link)
+    print(links)
+    return json.dumps(links, ensure_ascii=False)
+
+
+@app.get("/katsottu/{videoId}", summary="Kasvattaa videon katsottu counteria yhdellä")
+def increaseWatched(videoId: str, t: str):
+    if path.isfile("watches.json") is False:
+        with open("watches.json", 'w') as f:
+            json.dump({"0": "0"}, f)
+    with open("watches.json") as f:
+        watches = json.load(f)
+    if videoId + "?t=" + t in watches:
+        watches[videoId + "?t=" + t] = watches[videoId + "?t=" + t] + 1
+    else:
+        watches[videoId + "?t=" + t] = 0
+    with open("watches.json", 'w') as json_file:
+        json.dump(watches, json_file, default=obj_dict, ensure_ascii=False)
+    return "OK"
+
+
+@app.get("/vaihdaNimi/{videoId}", summary="Kasvattaa videon katsottu counteria yhdellä")
+def changeName(videoId: str, newName: str):
+    if path.isfile("nimet.json") is False:
+        with open("nimet.json", 'w') as f:
+            json.dump({"0": "0"}, f)
+    with open("watches.json") as f:
+        watches = json.load(f)
+    if videoId + "?t=" + t in watches:
+        watches[videoId + "?t=" + t] = watches[videoId + "?t=" + t] + 1
+    else:
+        watches[videoId + "?t=" + t] = 0
+    with open("watches.json", 'w') as json_file:
+        json.dump(watches, json_file, default=obj_dict, ensure_ascii=False)
+    return "OK"
