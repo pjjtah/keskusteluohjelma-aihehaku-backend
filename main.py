@@ -1,5 +1,6 @@
 import os
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+# from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+import schedule
 from fastapi import FastAPI, status, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -14,7 +15,7 @@ from utils import (
 )
 from dotenv import load_dotenv
 from videoRequester import get_videos
-from datetime import date
+from datetime import date, datetime
 
 load_dotenv()
 
@@ -30,42 +31,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-connect_str = os.environ['connect_str']
-container_name = os.environ['container_name']
-container_client = ContainerClient.from_connection_string(connect_str, container_name)
+# connect_str = os.environ['connect_str']
+# container_name = os.environ['container_name']
+# container_client = ContainerClient.from_connection_string(connect_str, container_name)
 
 
 def obj_dict(obj):
     return obj.__dict__
 
 
+def backup_tags():
+    if path.isfile("tags.json"):
+        with open("tags.json") as f:
+            tags = json.load(f)
+        date_time = datetime.now().strftime("%m-%d-%Y_%H-%M")
+        with open("backups/tags" + date_time + ".json", 'w') as json_file:
+            json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
+
+
+# Run job every 6 hours
+schedule.every(3).hours.do(backup_tags)
+schedule.every().day.do(get_videos)
+
 # get_videos()
 
 
 def check_tags():
     if path.isfile("tags.json") is False:
-        blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name,
-                                                 blob_name="tags.json")
-        if blob.exists():
-            with open("tags.json", "wb") as my_blob:
-                blob_data = blob.download_blob()
-                blob_data.readinto(my_blob)
-        else:
-            with open("tags.json", 'w') as f:
-                json.dump({"piilotettu": [""]}, f)
+        with open("tags.json", 'w') as f:
+            json.dump({"piilotettu": [""], "ylapeukku": [""], "alapeukku": [""], "lit": [""]}, f)
+    schedule.run_pending()
+
+
+def check_data():
+    if path.isfile("data.json") is False:
+        get_videos()
 
 
 def check_suggestions():
     if path.isfile("suggestions.json") is False:
-        blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name,
-                                                 blob_name="suggestions.json")
-        if blob.exists():
-            with open("suggestions.json", "wb") as my_blob:
-                blob_data = blob.download_blob()
-                blob_data.readinto(my_blob)
-        else:
-            with open("suggestions.json", 'w') as f:
-                json.dump({"testi": date.today().strftime("%d-%m-%Y")}, f)
+        with open("suggestions.json", 'w') as f:
+            json.dump({"testi": date.today().strftime("%d-%m-%Y")}, f)
 
 
 @app.post('/kirjaudu', summary="Kirjaudu sisään", response_model=TokenSchema)
@@ -242,6 +248,8 @@ def hello(term: str):
 
 @app.get("/keskusteluohjelma", summary="Listaa aiheet hakusanan mukaan")
 def hello(term: str):
+    check_tags()
+    check_data()
     data = json.load(open('data.json', encoding='utf-8'))
     tags = json.load(open('tags.json', encoding='"ISO-8859-1")'))
     if term == "":
@@ -268,7 +276,9 @@ def hello(term: str):
                 tagged_ids.append(t)
     for d in data:
         for c in d["chapters"]:
-            if d["videoId"] + "?t=" + str(c[0]) in tagged_ids:
+            print(c)
+            print(term)
+            if d["videoId"] + "?t=" + str(c[0]) in tagged_ids or term in c[1].lower():
                 link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                 links.append(link)
     print(links)
@@ -302,7 +312,7 @@ def hello(term: str):
                 tagged_ids.append(t)
     for d in data:
         for c in d["chapters"]:
-            if d["videoId"] + "?t=" + str(c[0]) in tagged_ids:
+            if d["videoId"] + "?t=" + str(c[0]) in tagged_ids or term in c[1].lower():
                 link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                 links.append(link)
     print(links)
@@ -325,6 +335,7 @@ def increaseWatched(videoId: str, t: str):
     return "OK"
 
 
+'''
 @app.get("/vaihdaNimi/{videoId}", summary="Kasvattaa videon katsottu counteria yhdellä")
 def changeName(videoId: str, newName: str):
     if path.isfile("nimet.json") is False:
@@ -339,3 +350,4 @@ def changeName(videoId: str, newName: str):
     with open("watches.json", 'w') as json_file:
         json.dump(watches, json_file, default=obj_dict, ensure_ascii=False)
     return "OK"
+'''
