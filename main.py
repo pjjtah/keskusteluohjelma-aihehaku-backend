@@ -258,8 +258,9 @@ def hello(term: str):
             for c in d["chapters"]:
                 if term in c[1]:
                     if d["videoId"] + "?t=" + str(c[0]) not in tags["piilotettu"]:
-                        link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
-                        links.append(link)
+                        if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
+                            link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
+                            links.append(link)
         print(links)
         return json.dumps(links, ensure_ascii=False)
 
@@ -279,8 +280,9 @@ def hello(term: str):
             print(c)
             print(term)
             if d["videoId"] + "?t=" + str(c[0]) in tagged_ids or term in c[1].lower():
-                link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
-                links.append(link)
+                if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
+                    link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
+                    links.append(link)
     print(links)
     return json.dumps(links, ensure_ascii=False)
 
@@ -293,8 +295,9 @@ def hello(term: str):
         for d in data:
             for c in d["chapters"]:
                 if term in c[1]:
-                    link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
-                    links.append(link)
+                    if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
+                        link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
+                        links.append(link)
         print(links)
         return json.dumps(links, ensure_ascii=False)
 
@@ -313,8 +316,9 @@ def hello(term: str):
     for d in data:
         for c in d["chapters"]:
             if d["videoId"] + "?t=" + str(c[0]) in tagged_ids or term in c[1].lower():
-                link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
-                links.append(link)
+                if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
+                    link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
+                    links.append(link)
     print(links)
     return json.dumps(links, ensure_ascii=False)
 
@@ -329,7 +333,7 @@ def increaseWatched(videoId: str, t: str):
     if videoId + "?t=" + t in watches:
         watches[videoId + "?t=" + t] = watches[videoId + "?t=" + t] + 1
     else:
-        watches[videoId + "?t=" + t] = 0
+        watches[videoId + "?t=" + t] = 1
     with open("watches.json", 'w') as json_file:
         json.dump(watches, json_file, default=obj_dict, ensure_ascii=False)
     return "OK"
