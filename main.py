@@ -13,6 +13,7 @@ from utils import (
     create_refresh_token,
     verify_password
 )
+from storage import upload_tags, download_tags
 from dotenv import load_dotenv
 from videoRequester import get_videos
 from datetime import date, datetime
@@ -42,6 +43,7 @@ def obj_dict(obj):
 
 def backup_tags():
     if path.isfile("tags.json"):
+        upload_tags()
         with open("tags.json") as f:
             tags = json.load(f)
         date_time = datetime.now().strftime("%m-%d-%Y_%H-%M")
@@ -58,8 +60,11 @@ schedule.every().day.do(get_videos)
 
 def check_tags():
     if path.isfile("tags.json") is False:
+        download_tags()
+        '''
         with open("tags.json", 'w') as f:
             json.dump({"piilotettu": [""], "ylapeukku": [""], "alapeukku": [""], "lit": [""]}, f)
+        '''
     schedule.run_pending()
 
 
