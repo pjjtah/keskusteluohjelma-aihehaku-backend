@@ -1,30 +1,34 @@
 import os
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
-from datetime import date
+import boto3
+from dotenv import load_dotenv
 
-connect_str = os.environ['connect_str']
-container_name = os.environ['container_name']
-container_client = ContainerClient.from_connection_string(connect_str, container_name)
+load_dotenv()
+
+ACCESS_ID = os.environ.get('STORAGE_ACCESS_ID')
+SECRET_KEY = os.environ.get('STORAGE_SECRET_KEY')
+
+# Initiate session
+session = boto3.session.Session()
+client = session.client('s3',
+                        region_name='ams3',
+                        endpoint_url='https://ams3.digitaloceanspaces.com',
+                        aws_access_key_id=ACCESS_ID,
+                        aws_secret_access_key=SECRET_KEY)
 
 
 def upload_data():
     try:
-        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-        blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="data.json")
-        backup_name = "data-" + date.today().strftime("%d-%m-%Y") + ".json"
-        # create backup from old tags, delete it and upload it again with timestamp
-        if blob.exists():
-            with open(backup_name, "wb") as my_blob:
-                blob_data = blob.download_blob()
-                blob_data.readinto(my_blob)
-            blob.delete_blob()
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob=backup_name)
-            with open(backup_name, "rb") as backup_tags:
-                blob_client.upload_blob(backup_tags, overwrite=True)
-        # upload new tags
-        blob_client = blob_service_client.get_blob_client(container=container_name, blob="data.json")
-        with open("data.json", "rb") as tags:
-            blob_client.upload_blob(tags)
+        client.upload_file('data.json', 'keskustelustorage', 'data.json')
+    except Exception as ex:
+        print('Exception:')
+        print(ex)
+
+
+def download_data():
+    try:
+        client.download_file('keskustelustorage',
+                             'data.json',
+                             'data.json')
     except Exception as ex:
         print('Exception:')
         print(ex)
@@ -32,23 +36,23 @@ def upload_data():
 
 def upload_tags():
     try:
-        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-        blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="tags.json")
-        backup_name = "tags-" + date.today().strftime("%d-%m-%Y") + ".json"
-        # create backup from old tags, delete it and upload it again with timestamp
-        if blob.exists():
-            with open(backup_name, "wb") as my_blob:
-                blob_data = blob.download_blob()
-                blob_data.readinto(my_blob)
-            blob.delete_blob()
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob=backup_name)
-            with open(backup_name, "rb") as backup_tags:
-                blob_client.upload_blob(backup_tags, overwrite=True)
-            print("backup of tags stored into azure")
-        # upload new tags
-        blob_client = blob_service_client.get_blob_client(container=container_name, blob="tags.json")
-        with open("tags.json", "rb") as tags:
-            blob_client.upload_blob(tags)
+        client.upload_file('tags.json', 'keskustelustorage', 'tags.json')
+    except Exception as ex:
+        print('Exception:')
+        print(ex)
+
+
+def upload_watches():
+    try:
+        client.upload_file('watches.json', 'keskustelustorage', 'watches.json')
+    except Exception as ex:
+        print('Exception:')
+        print(ex)
+
+
+def upload_suggestions():
+    try:
+        client.upload_file('suggestions.json', 'keskustelustorage', 'suggestions.json')
     except Exception as ex:
         print('Exception:')
         print(ex)
@@ -56,12 +60,40 @@ def upload_tags():
 
 def download_tags():
     try:
-        blob = BlobClient.from_connection_string(conn_str=connect_str, container_name=container_name, blob_name="tags.json")
-        if blob.exists():
-            with open("tags.json", "wb") as tags:
-                blob_data = blob.download_blob()
-                blob_data.readinto(tags)
-                print("tags loaded from azure")
+        client.download_file('keskustelustorage',
+                             'tags.json',
+                             'tags.json')
     except Exception as ex:
         print('Exception:')
         print(ex)
+
+
+def download_watches():
+    try:
+        client.download_file('keskustelustorage',
+                             'watches.json',
+                             'watches.json')
+    except Exception as ex:
+        print('Exception:')
+        print(ex)
+
+
+def download_suggestions():
+    try:
+        client.download_file('keskustelustorage',
+                             'suggestions.json',
+                             'suggestions.json')
+    except Exception as ex:
+        print('Exception:')
+        print(ex)
+
+
+def upload_users():
+    try:
+        client.download_file('keskustelustorage',
+                             'users.json',
+                             'users.json')
+    except Exception as ex:
+        print('Exception:')
+        print(ex)
+

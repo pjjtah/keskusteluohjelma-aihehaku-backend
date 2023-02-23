@@ -13,7 +13,8 @@ from utils import (
     create_refresh_token,
     verify_password
 )
-# from storage import upload_tags, download_tags
+from storage import upload_tags, download_tags, download_data, upload_data, upload_watches, upload_suggestions,\
+    upload_users, download_suggestions, download_watches
 from dotenv import load_dotenv
 from videoRequester import get_videos
 from datetime import date, datetime
@@ -43,38 +44,48 @@ def obj_dict(obj):
 
 def backup_tags():
     if path.isfile("tags.json"):
-        # upload_tags()
+        upload_tags()
+        '''
         with open("tags.json") as f:
             tags = json.load(f)
         date_time = datetime.now().strftime("%m-%d-%Y_%H-%M")
         with open("backups/tags" + date_time + ".json", 'w') as json_file:
             json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
+        '''
 
 
 # Run job every 6 hours
-schedule.every(3).hours.do(backup_tags)
+# schedule.every(3).hours.do(backup_tags)
 schedule.every().day.do(get_videos)
+schedule.every().day.do(upload_data)
 
 # get_videos()
 
 
 def check_tags():
     if path.isfile("tags.json") is False:
-        #download_tags()
+        download_tags()
+        '''
         with open("tags.json", 'w') as f:
             json.dump({"piilotettu": [""], "ylapeukku": [""], "alapeukku": [""], "lit": [""]}, f)
-    schedule.run_pending()
+        '''
+    # schedule.run_pending()
 
 
 def check_data():
+    schedule.run_pending()
     if path.isfile("data.json") is False:
-        get_videos()
+        download_data()
 
 
 def check_suggestions():
     if path.isfile("suggestions.json") is False:
-        with open("suggestions.json", 'w') as f:
-            json.dump({"testi": date.today().strftime("%d-%m-%Y")}, f)
+        download_suggestions()
+
+
+def check_watches():
+    if path.isfile("suggestions.json") is False:
+        download_watches()
 
 
 @app.post('/kirjaudu', summary="Kirjaudu sisään", response_model=TokenSchema)
@@ -84,6 +95,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             json.dump({"id": "087cb8b7-add0-45d3-9407-d0d99d26c253", "username": os.environ.get("_username"),
                        "password": os.environ.get("_password"),
                        "access_token": "", "refresh_token": ""}, f)
+        upload_users()
     u = json.load(open('users.json', encoding='utf-8'))
     user = None
 
@@ -130,6 +142,7 @@ async def create_tag(nimi: str, response: Response, user=Depends(get_current_use
     tags[nimi] = [nimi]
     with open("tags.json", 'w') as json_file:
         json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
+    upload_tags()
     response.status_code = status.HTTP_201_CREATED
     return "OK - " + nimi + " lisätty tageihin"
 
@@ -150,6 +163,7 @@ async def create_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
     tags[tagin_nimi].append(avainsana)
     with open("tags.json", 'w') as json_file:
         json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
+    upload_tags()
     return "OK - " + avainsana + " lisätty tagiin: " + tagin_nimi
 
 
@@ -167,6 +181,7 @@ async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
         tags[tagin_nimi].remove(avainsana)
         with open("tags.json", 'w') as json_file:
             json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
+        upload_tags()
         return "OK - " + avainsana + " poistettu tagista: " + tagin_nimi
     response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
     return "Tagia poistaessa tapahtui virhe"
@@ -228,6 +243,7 @@ def create_suggestion(ehdotus: str, response: Response):
     suggestions[ehdotus] = date.today().strftime("%d-%m-%Y")
     with open("suggestions.json", 'w') as json_file:
         json.dump(suggestions, json_file, default=obj_dict, ensure_ascii=False)
+    upload_suggestions()
     response.status_code = status.HTTP_201_CREATED
     return "OK - " + ehdotus + " lisätty ehdotuksiin"
 
@@ -264,7 +280,6 @@ def hello(term: str):
                         if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
                             link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                             links.append(link)
-        print(links)
         return json.dumps(links, ensure_ascii=False)
 
     links = []
@@ -286,7 +301,6 @@ def hello(term: str):
                 if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
                     link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                     links.append(link)
-    print(links)
     return json.dumps(links, ensure_ascii=False)
 
 
@@ -301,7 +315,6 @@ def hello(term: str):
                     if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
                         link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                         links.append(link)
-        print(links)
         return json.dumps(links, ensure_ascii=False)
 
     tags = json.load(open('tags.json', encoding='"ISO-8859-1")'))
@@ -322,15 +335,12 @@ def hello(term: str):
                 if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
                     link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                     links.append(link)
-    print(links)
     return json.dumps(links, ensure_ascii=False)
 
 
 @app.get("/katsottu/{videoId}", summary="Kasvattaa videon katsottu counteria yhdellä")
 def increaseWatched(videoId: str, t: str):
-    if path.isfile("watches.json") is False:
-        with open("watches.json", 'w') as f:
-            json.dump({"0": "0"}, f)
+    check_watches()
     with open("watches.json") as f:
         watches = json.load(f)
     if videoId + "?t=" + t in watches:
@@ -339,6 +349,7 @@ def increaseWatched(videoId: str, t: str):
         watches[videoId + "?t=" + t] = 1
     with open("watches.json", 'w') as json_file:
         json.dump(watches, json_file, default=obj_dict, ensure_ascii=False)
+    upload_watches()
     return "OK"
 
 
