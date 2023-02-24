@@ -270,7 +270,7 @@ def hello(term: str):
     check_tags()
     check_data()
     data = json.load(open('data.json', encoding='utf-8'))
-    tags = json.load(open('tags.json', encoding='"utf-8")'))
+    tags = json.load(open('tags.json', encoding='utf-8'))
     if term == "":
         links = []
         for d in data:
