@@ -210,7 +210,7 @@ async def delete_tag(nimi: str, response: Response, user=Depends(get_current_use
 @app.get('/tagit', summary='Listaa kaikki tagit')
 async def get_tags():
     check_tags()
-    data = json.load(open('tags.json', encoding='iso-8859-1'))
+    data = json.load(open('tags.json', encoding='utf-8'))
     return json.dumps(data)
 
 
