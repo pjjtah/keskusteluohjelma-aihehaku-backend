@@ -134,7 +134,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def create_tag(nimi: str, response: Response, user=Depends(get_current_user)):
     nimi = nimi.lower()
     check_tags()
-    with open("tags.json", encoding='iso-8859-1') as f:
+    with open("tags.json", encoding='utf-8') as f:
         tags = json.load(f)
     if nimi in tags:
         response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -152,7 +152,7 @@ async def create_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
     avainsana = avainsana + "?t=" + aika.lower()
     tagin_nimi = tagin_nimi.lower()
     check_tags()
-    with open("tags.json", encoding='iso-8859-1') as f:
+    with open("tags.json", encoding='utf-8') as f:
         tags = json.load(f)
     if tags[tagin_nimi] is None:
         response.status_code = status.HTTP_404_NOT_FOUND
@@ -172,7 +172,7 @@ async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
     avainsana = avainsana + "?t=" + aika.lower()
     tagin_nimi = tagin_nimi.lower()
     check_tags()
-    with open("tags.json", encoding='iso-8859-1') as f:
+    with open("tags.json", encoding='utf-8') as f:
         tags = json.load(f)
     if tags[tagin_nimi] is None:
         response.status_code = status.HTTP_404_NOT_FOUND
@@ -193,7 +193,7 @@ async def delete_tag(nimi: str, response: Response, user=Depends(get_current_use
     check_tags()
     print(tagin_nimi)
     print(nimi)
-    with open("tags.json", encoding='iso-8859-1') as f:
+    with open("tags.json", encoding='utf-8') as f:
         tags = json.load(f)
     if tags[tagin_nimi] is None:
         response.status_code = status.HTTP_404_NOT_FOUND
