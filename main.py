@@ -306,6 +306,8 @@ def hello(term: str):
 
 @app.get("/keskusteluohjelmaAdmin", summary="Listaa aiheet hakusanan mukaan")
 def hello(term: str):
+    check_data()
+    check_tags()
     data = json.load(open('data.json', encoding='utf-8'))
     if term == "":
         links = []
