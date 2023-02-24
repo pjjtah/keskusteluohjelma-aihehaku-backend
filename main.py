@@ -140,7 +140,7 @@ async def create_tag(nimi: str, response: Response, user=Depends(get_current_use
         response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
         return "Tagi " + nimi + " on jo olemassa"
     tags[nimi] = [nimi]
-    with open("tags.json", 'w') as json_file:
+    with open("tags.json", 'w', encoding='utf-8') as json_file:
         json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
     upload_tags()
     response.status_code = status.HTTP_201_CREATED
@@ -161,7 +161,7 @@ async def create_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
         response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
         return "Avainsana " + tagin_nimi + " on jo tagissa"
     tags[tagin_nimi].append(avainsana)
-    with open("tags.json", 'w') as json_file:
+    with open("tags.json", 'w', encoding='utf-8') as json_file:
         json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
     upload_tags()
     return "OK - " + avainsana + " lisätty tagiin: " + tagin_nimi
@@ -179,7 +179,7 @@ async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
         return "Tagia " + avainsana + " ei ole olemassa"
     if avainsana in tags[tagin_nimi]:
         tags[tagin_nimi].remove(avainsana)
-        with open("tags.json", 'w') as json_file:
+        with open("tags.json", 'w', encoding='utf-8') as json_file:
             json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
         upload_tags()
         return "OK - " + avainsana + " poistettu tagista: " + tagin_nimi
@@ -200,7 +200,7 @@ async def delete_tag(nimi: str, response: Response, user=Depends(get_current_use
         return "Tagia " + tagin_nimi + " ei ole olemassa"
     if tagin_nimi in tags:
         tags.pop(tagin_nimi)
-        with open("tags.json", 'w') as json_file:
+        with open("tags.json", 'w', encoding='utf-8') as json_file:
             json.dump(tags, json_file, default=obj_dict, ensure_ascii=False)
         return "OK - " + tagin_nimi + " poistettu tageista"
     response.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -217,7 +217,7 @@ async def get_tags():
 @app.get('/tagit/{videoId}', summary='Listaa kaikki videon tagit')
 async def get_tags_by_videoId(videoId: str):
     check_tags()
-    data = json.load(open('tags.json', encoding='iso-8859-1'))
+    data = json.load(open('tags.json', encoding='utf-8'))
     selected = []
     for tag in data:
         for t in data[tag]:
@@ -270,7 +270,7 @@ def hello(term: str):
     check_tags()
     check_data()
     data = json.load(open('data.json', encoding='utf-8'))
-    tags = json.load(open('tags.json', encoding='"ISO-8859-1")'))
+    tags = json.load(open('tags.json', encoding='"utf-8")'))
     if term == "":
         links = []
         for d in data:
@@ -319,7 +319,7 @@ def hello(term: str):
                         links.append(link)
         return json.dumps(links, ensure_ascii=False)
 
-    tags = json.load(open('tags.json', encoding='"ISO-8859-1")'))
+    tags = json.load(open('tags.json', encoding='utf-8'))
     links = []
     tagged = []
     tagged_ids = []
