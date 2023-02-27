@@ -114,7 +114,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             detail="Kirjautuminen epäonnistui"
         )
 
-    print(user['username'])
     access_token = create_access_token(user['username'])
     refresh_token = create_refresh_token(user['username'])
     u["access_token"] = access_token
@@ -193,8 +192,6 @@ async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
 async def delete_tag(nimi: str, response: Response, user=Depends(get_current_user)):
     tagin_nimi = nimi
     check_tags()
-    print(tagin_nimi)
-    print(nimi)
     with open("tags.json", encoding='utf-8') as f:
         tags = json.load(f)
     if tags[tagin_nimi] is None:
@@ -297,8 +294,6 @@ def hello(term: str):
                 tagged_ids.append(t)
     for d in data:
         for c in d["chapters"]:
-            print(c)
-            print(term)
             if d["videoId"] + "?t=" + str(c[0]) in tagged_ids or term in c[1].lower():
                 if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
                     link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
