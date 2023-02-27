@@ -14,7 +14,7 @@ from utils import (
     verify_password
 )
 from storage import upload_tags, download_tags, download_data, upload_data, upload_watches, upload_suggestions,\
-    upload_users, download_suggestions, download_watches
+    upload_users, download_suggestions, download_watches, upload_tags_backup
 from dotenv import load_dotenv
 from videoRequester import get_videos
 from datetime import date, datetime
@@ -44,7 +44,7 @@ def obj_dict(obj):
 
 def backup_tags():
     if path.isfile("tags.json"):
-        upload_tags()
+        upload_tags_backup()
         '''
         with open("tags.json") as f:
             tags = json.load(f)
@@ -54,8 +54,7 @@ def backup_tags():
         '''
 
 
-# Run job every 6 hours
-# schedule.every(3).hours.do(backup_tags)
+schedule.every(3).hours.do(backup_tags)
 schedule.every().day.do(get_videos)
 schedule.every().day.do(upload_data)
 
@@ -132,6 +131,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 @app.post('/tagit', summary='Luo uusi tagi')
 async def create_tag(nimi: str, response: Response, user=Depends(get_current_user)):
+    schedule.run_pending()
     nimi = nimi.lower()
     check_tags()
     with open("tags.json", encoding='utf-8') as f:
@@ -149,6 +149,7 @@ async def create_tag(nimi: str, response: Response, user=Depends(get_current_use
 
 @app.post('/tagit/{tagin_nimi}/{avainsana}/{aika}', summary='Lisää tagille avainsana')
 async def create_tag(tagin_nimi: str, avainsana: str, aika: str, response: Response, user=Depends(get_current_user)):
+    schedule.run_pending()
     avainsana = avainsana + "?t=" + aika.lower()
     tagin_nimi = tagin_nimi.lower()
     check_tags()
@@ -169,6 +170,7 @@ async def create_tag(tagin_nimi: str, avainsana: str, aika: str, response: Respo
 
 @app.delete('/tagit/{tagin_nimi}/{avainsana}/{aika}', summary='Poistaa tagilta avainsanan')
 async def delete_tag(tagin_nimi: str, avainsana: str, aika: str, response: Response, user=Depends(get_current_user)):
+    schedule.run_pending()
     avainsana = avainsana + "?t=" + aika.lower()
     tagin_nimi = tagin_nimi.lower()
     check_tags()

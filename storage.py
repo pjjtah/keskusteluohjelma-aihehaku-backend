@@ -1,4 +1,5 @@
 import os
+import time
 import boto3
 from dotenv import load_dotenv
 
@@ -37,6 +38,14 @@ def download_data():
 def upload_tags():
     try:
         client.upload_file('tags.json', 'keskustelustorage', 'tags.json')
+    except Exception as ex:
+        print('Exception:')
+        print(ex)
+
+
+def upload_tags_backup():
+    try:
+        client.upload_file('tags.json', 'keskustelustorage', 'tags-' + time.strftime("%Y%m%d-%H%M%S") + '.json' )
     except Exception as ex:
         print('Exception:')
         print(ex)
