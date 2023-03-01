@@ -1,5 +1,7 @@
 import os
 # from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+import random
+
 import schedule
 from fastapi import FastAPI, status, HTTPException, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -279,6 +281,7 @@ def hello(term: str):
                         if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
                             link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                             links.append(link)
+        random.shuffle(links)
         return json.dumps(links, ensure_ascii=False)
 
     links = []
@@ -314,6 +317,7 @@ def hello(term: str):
                     if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
                         link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                         links.append(link)
+        random.shuffle(links)
         return json.dumps(links, ensure_ascii=False)
 
     tags = json.load(open('tags.json', encoding='utf-8'))
@@ -334,6 +338,7 @@ def hello(term: str):
                 if "VLOG" in d["title"] or "EDUSKUNTAVAALIT" in d["title"]:
                     link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                     links.append(link)
+    random.shuffle(links)
     return json.dumps(links, ensure_ascii=False)
 
 
