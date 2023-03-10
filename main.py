@@ -99,7 +99,7 @@ def check_suggestions():
 
 
 def check_watches():
-    if path.isfile("suggestions.json") is False:
+    if path.isfile("watches.json") is False:
         download_watches()
 
 
