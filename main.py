@@ -3,7 +3,7 @@ import os
 import random
 
 import schedule
-from fastapi import FastAPI, status, HTTPException, Depends, Response
+from fastapi import FastAPI, status, HTTPException, Depends, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from schemas import UserOut, UserAuth, TokenSchema
@@ -16,7 +16,7 @@ from utils import (
     verify_password
 )
 from storage import upload_tags, download_tags, download_data, upload_data, upload_watches, upload_suggestions,\
-    upload_users, download_suggestions, download_watches, upload_tags_backup
+    upload_users, download_suggestions, download_watches, upload_tags_backup, upload_name_changes, download_name_changes
 from dotenv import load_dotenv
 from videoRequester import get_videos
 from datetime import date, datetime
@@ -56,8 +56,22 @@ def backup_tags():
         '''
 
 
-schedule.every(3).hours.do(backup_tags)
-schedule.every().day.do(get_videos)
+def get_videos_and_names():
+    get_videos()
+    data = json.load(open('data.json', encoding='utf-8'))
+    check_name_changes()
+    names = json.load(open("namechanges.json", encoding='utf-8'))
+    for d in data:
+        for c in d["chapters"]:
+            clipId = d["videoId"] + "?t=" + str(c[0])
+            if clipId in names:
+                c[1] = names[clipId]
+    with open("data.json", 'w', encoding='utf-8') as json_file:
+        json.dump(data, json_file, default=obj_dict, ensure_ascii=False)
+
+
+schedule.every(23).hours.do(backup_tags)
+schedule.every().day.do(get_videos_and_names)
 schedule.every().day.do(upload_data)
 
 # get_videos()
@@ -87,6 +101,11 @@ def check_suggestions():
 def check_watches():
     if path.isfile("suggestions.json") is False:
         download_watches()
+
+
+def check_name_changes():
+    if path.isfile("namechanges.json") is False:
+        download_name_changes()
 
 
 @app.post('/kirjaudu', summary="Kirjaudu sisään", response_model=TokenSchema)
@@ -357,19 +376,27 @@ def increaseWatched(videoId: str, t: str):
     return "OK"
 
 
-'''
-@app.get("/vaihdaNimi/{videoId}", summary="Kasvattaa videon katsottu counteria yhdellä")
-def changeName(videoId: str, newName: str):
-    if path.isfile("nimet.json") is False:
-        with open("nimet.json", 'w') as f:
-            json.dump({"0": "0"}, f)
-    with open("watches.json") as f:
-        watches = json.load(f)
-    if videoId + "?t=" + t in watches:
-        watches[videoId + "?t=" + t] = watches[videoId + "?t=" + t] + 1
-    else:
-        watches[videoId + "?t=" + t] = 0
-    with open("watches.json", 'w') as json_file:
-        json.dump(watches, json_file, default=obj_dict, ensure_ascii=False)
+@app.post("/klipit/{videoId}/{aika}", summary="Vaihtaa klipin nimen")
+async def changeName(videoId: str, aika: str, request: Request, user=Depends(get_current_user)):
+    check_name_changes()
+    body = await request.json()
+
+    with open("namechanges.json", encoding='utf-8') as f:
+        names = json.load(f)
+    names[videoId + "?t=" + aika] = body
+    with open("namechanges.json", 'w', encoding='utf-8') as json_file:
+        json.dump(names, json_file, default=obj_dict, ensure_ascii=False)
+
+    data = json.load(open('data.json', encoding='utf-8'))
+    for d in data:
+        if d["videoId"] == videoId:
+            for c in d["chapters"]:
+                if int(c[0]) == int(aika):
+                    c[1] = body
+                    break
+    with open("data.json", 'w', encoding='utf-8') as json_file:
+        json.dump(data, json_file, default=obj_dict, ensure_ascii=False)
+
+    upload_name_changes()
     return "OK"
-'''
+

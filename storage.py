@@ -106,3 +106,21 @@ def upload_users():
         print('Exception:')
         print(ex)
 
+
+def upload_name_changes():
+    try:
+        client.upload_file('namechanges.json', 'keskustelustorage', 'namechanges.json')
+    except Exception as ex:
+        print('Exception:')
+        print(ex)
+
+
+def download_name_changes():
+    try:
+        client.download_file('keskustelustorage',
+                             'namechanges.json',
+                             'namechanges.json')
+    except Exception as ex:
+        print('Exception:')
+        print(ex)
+
