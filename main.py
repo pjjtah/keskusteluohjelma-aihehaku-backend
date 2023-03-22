@@ -301,6 +301,7 @@ def hello(term: str):
                             link = [d["title"], c[1], "https://youtu.be/" + d["videoId"] + "?t=" + str(c[0])]
                             links.append(link)
         random.shuffle(links)
+        links.insert(random.randint(0, 9), ["ig", "linkki instagramiin", "https://www.instagram.com/kaarlenvaalit/"])
         return json.dumps(links, ensure_ascii=False)
 
     links = []
